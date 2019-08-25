@@ -68,23 +68,31 @@ ATTR_BATTERY_STATE = 'battery_state'
 ATTR_POWER = 'power'
 ATTR_DELAY_OFF_COUNTDOWN = 'delay_off_countdown'
 ATTR_ANGLE = 'angle'
+#ATTR_ROLL_ANGLE = 'roll_angle'
 ATTR_SPEED = 'speed'
+ATTR_SPEED_NUM = 'speed'
 ATTR_USE_TIME = 'use_time'
 ATTR_BUTTON_PRESSED = 'button_pressed'
 ATTR_SPEED_LEVEL = 'speed_level'
-
+ATTR_MODE = 'mode'
+    
 AVAILABLE_ATTRIBUTES_FAN = {
     ATTR_SPEED: 'speed',
+    #ATTR_SPEED_LEVEL: 'speed_level',
+    #ATTR_SPEED_NUM: 'speed',
     ATTR_DELAY_OFF_COUNTDOWN: 'delay_off_countdown',
 
     ATTR_POWER: 'power',
     ATTR_OSCILLATE: 'oscillate',
-    ATTR_SPEED: 'speed',
+    #ATTR_SPEED: 'speed',
     ATTR_CHILD_LOCK: 'child_lock',
     ATTR_BUZZER: 'buzzer',
+    ATTR_MODE: 'mode',
+    ATTR_ANGLE: 'angle',
+    #ATTR_ROLL_ANGLE: 'roll_angle',
 
     # Additional properties of version 2
-    ATTR_LED: 'led',
+    #ATTR_LED: 'led',
 }
 
 FAN_SPEED_LEVEL1 = 'Level 1'
@@ -418,20 +426,24 @@ class XiaomiFan(XiaomiGenericDevice):
 
             self._available = True
             self._oscillate = state.oscillate
-            # self._natural_mode = (state.natural_speed != 0)
-            self._natural_mode = None
+            self._natural_mode = (state.mode == "nature")
+            #self._natural_mode = None
             self._state = state.is_on
 
-            if self._natural_mode:
-                for level, range in FAN_SPEED_LIST.items():
-                    if state.natural_speed in range:
-                        self._speed = level
-                        break
-            else:
-                for level, range in FAN_SPEED_LIST.items():
-                    if state.speed in range:
-                        self._speed = level
-                        break
+            #if self._natural_mode:
+            #    for level, range in FAN_SPEED_LIST.items():
+            #        if state.natural_speed in range:
+            #            self._speed = level
+            #            break
+            #else:
+            #    for level, range in FAN_SPEED_LIST.items():
+            #        if state.speed in range:
+            #            self._speed = level
+            #            break
+            for level, range in FAN_SPEED_LIST.items():
+                if state.speed in range:
+                    self._speed = level
+                    break
 
             self._state_attrs[ATTR_SPEED_LEVEL] = self._speed
             self._state_attrs.update(
@@ -529,13 +541,25 @@ class XiaomiFan(XiaomiGenericDevice):
         if self._device_features & FEATURE_SET_NATURAL_MODE == 0:
             return
 
-        self._natural_mode = True
-        await self.async_set_speed(self._speed)
+        from miio.fan import OperationMode
+
+        #self._natural_mode = True
+        #await self.async_set_speed(self._speed)
+        await self._try_command(
+            "Setting natural mode failed.",
+            self._device.set_mode, OperationMode("nature"))
+        
 
     async def async_set_natural_mode_off(self):
         """Turn the natural mode off."""
         if self._device_features & FEATURE_SET_NATURAL_MODE == 0:
             return
 
-        self._natural_mode = False
-        await self.async_set_speed(self._speed)
+        from miio.fan import OperationMode
+
+        #self._natural_mode = False
+        #await self.async_set_speed(self._speed)
+        await self._try_command(
+            "Setting normal mode failed.",
+            self._device.set_mode, OperationMode("normal"))
+        
